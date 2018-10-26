@@ -567,7 +567,7 @@ class CompositeSourceModel(collections.Sequence):
         Generate unique seeds for each rupture with numpy.arange.
         This should be called only in event based calculators
         """
-        serial = 1
+        serial = ses_seed
         for src in self.getsources():
             nr = src.num_ruptures
             src.serial = serial
