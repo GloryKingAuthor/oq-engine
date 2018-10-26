@@ -277,13 +277,15 @@ class EventBasedCalculator(base.HazardCalculator):
         """
         Prefilter the composite source model and store the source_info
         """
+        oq = self.oqparam
         self.R = self.csm.info.get_num_rlzs()
         num_rlzs = {grp_id: sum(
             len(rlzs) for rlzs in self.rlzs_by_gsim_grp[grp_id].values())
                     for grp_id in self.rlzs_by_gsim_grp}
         param = {'ruptures_per_block': RUPTURES_PER_BLOCK}
-        param['filter_distance'] = self.oqparam.filter_distance
-        param['ses_per_logic_tree_path'] = self.oqparam.ses_per_logic_tree_path
+        param['filter_distance'] = oq.filter_distance
+        param['ses_per_logic_tree_path'] = oq.ses_per_logic_tree_path
+        param['number_of_logic_tree_samples'] = oq.number_of_logic_tree_samples
         param['gsims_by_trt'] = self.csm.gsim_lt.values
         param['pointsource_distance'] = self.oqparam.pointsource_distance
         logging.info('Building ruptures')

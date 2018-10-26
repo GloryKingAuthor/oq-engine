@@ -134,7 +134,7 @@ stddev         838           555
     @attr('qa', 'risk', 'event_based_risk')
     def test_case_2_sampling(self):
         self.run_calc(case_2.__file__, 'job_sampling.ini')
-        self.assertEqual(len(self.calc.datastore['events']), 20)
+        self.assertEqual(len(self.calc.datastore['events']), 17)
         # TODO: improve this test
 
     @attr('qa', 'risk', 'event_based_risk')

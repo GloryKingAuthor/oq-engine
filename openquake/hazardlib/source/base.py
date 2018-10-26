@@ -102,20 +102,26 @@ class BaseSeismicSource(metaclass=abc.ABCMeta):
             `~openquake.hazardlib.source.rupture.BaseProbabilisticRupture`.
         """
 
-    def sample_ruptures(self, num_ses, ir_monitor):
+    def sample_ruptures(self, num_ses, fast, ir_monitor):
         """
         :param num_ses: number of stochastic event sets
         :param ir_monitor: a monitor object for .iter_ruptures()
         :yields: pairs (rupture, num_occurrences[num_samples, num_ses])
         """
-        shape = (getattr(self, 'samples', 1), num_ses)
+        samples = getattr(self, 'samples', 1)
+        if fast:
+            shape = 1
+            amplification = samples * num_ses
+        else:
+            shape = (samples, num_ses)
+            amplification = 1
         mutex_weight = getattr(self, 'mutex_weight', 1)
         with ir_monitor:
             ruptures = list(self.iter_ruptures())
         for rup, serial in zip(ruptures, self.serial):
             rup.serial = serial  # used as seed
             numpy.random.seed(serial)
-            num_occ = rup.sample_number_of_occurrences(shape)
+            num_occ = rup.sample_number_of_occurrences(shape, amplification)
             if num_occ.any():
                 if mutex_weight < 1:
                     # consider only the occurrencies below the mutex_weight

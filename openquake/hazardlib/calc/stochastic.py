@@ -113,13 +113,14 @@ def sample_ruptures(sources, src_filter=source_site_noop_filter,
     # Compute and save stochastic event sets
     cmaker = ContextMaker(gsims, src_filter.integration_distance,
                           param, monitor)
+    fast = param.get('number_of_logic_tree_samples') != 0
     num_ses = param['ses_per_logic_tree_path']
     for src, sites in src_filter(sources):
         t0 = time.time()
         # NB: the number of occurrences is very low, << 1, so it is
         # more efficient to filter only the ruptures that occur, i.e.
         # to call sample_ruptures *before* the filtering
-        ebrs = build_eb_ruptures(src, num_ses, cmaker, sites)
+        ebrs = build_eb_ruptures(src, num_ses, fast, cmaker, sites)
         n_evs = sum(ebr.multiplicity for ebr in ebrs)
         eb_ruptures.extend(ebrs)
         dt = time.time() - t0
@@ -128,10 +129,12 @@ def sample_ruptures(sources, src_filter=source_site_noop_filter,
     return dic
 
 
-def build_eb_ruptures(src, num_ses, cmaker, s_sites, rup_n_occ=(), sam_ses=()):
+def build_eb_ruptures(src, num_ses, fast, cmaker, s_sites,
+                      rup_n_occ=(), sam_ses=()):
     """
     :param src: a source object
     :param num_ses: number of stochastic event sets
+    :param fast: fast mode if number_of_logic_tree_samples > 0
     :param cmaker: a ContextMaker instance
     :param s_sites: a (filtered) site collection
     :param rup_n_occ: (rup, n_occ) pairs [inferred from the source]
@@ -141,7 +144,8 @@ def build_eb_ruptures(src, num_ses, cmaker, s_sites, rup_n_occ=(), sam_ses=()):
     # NB: s_sites can be None if cmaker.maximum_distance is False, then
     # the contexts are not computed and the ruptures not filtered
     ebrs = []
-    for rup, n_occ in rup_n_occ or src.sample_ruptures(num_ses, cmaker.ir_mon):
+    for rup, n_occ in rup_n_occ or src.sample_ruptures(
+            num_ses, fast, cmaker.ir_mon):
         if cmaker.maximum_distance:
             with cmaker.ctx_mon:
                 try:
@@ -158,6 +162,9 @@ def build_eb_ruptures(src, num_ses, cmaker, s_sites, rup_n_occ=(), sam_ses=()):
             sam_idx, ses_idx = sam_ses
             for _ in range(n_occ):
                 events.append((0, src.src_group_id, ses_idx + 1, sam_idx))
+        elif fast:  # n_occ is a 1x1 matrix
+            for _ in range(n_occ[0]):
+                events.append((0, src.src_group_id, 1, 0))
         else:  # regular case, n_occ is a matrix (num_samples, num_ses)
             for (sam_idx, ses_idx), num_occ in numpy.ndenumerate(n_occ):
                 for _ in range(num_occ):

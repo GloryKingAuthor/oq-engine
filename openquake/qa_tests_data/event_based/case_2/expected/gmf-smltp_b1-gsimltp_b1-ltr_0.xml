@@ -9,35 +9,97 @@ xmlns:gml="http://www.opengis.net/gml"
     >
         <gmfSet
         investigationTime="1.0"
-        stochasticEventSetId="11"
+        stochasticEventSetId="1"
         >
             <gmf
             IMT="PGA"
-            ruptureId="7606387081216"
+            ruptureId="4780298600448"
             >
-                <node gmv="3.2905376E-01" lat="0.0000000E+00" lon="0.0000000E+00"/>
+                <node gmv="2.4073198E-01" lat="0.0000000E+00" lon="0.0000000E+00"/>
             </gmf>
-        </gmfSet>
-        <gmfSet
-        investigationTime="1.0"
-        stochasticEventSetId="328"
-        >
             <gmf
             IMT="PGA"
-            ruptureId="9388798509056"
+            ruptureId="4849018077184"
             >
-                <node gmv="4.0074384E-01" lat="0.0000000E+00" lon="0.0000000E+00"/>
+                <node gmv="2.4256848E-01" lat="0.0000000E+00" lon="0.0000000E+00"/>
             </gmf>
-        </gmfSet>
-        <gmfSet
-        investigationTime="1.0"
-        stochasticEventSetId="587"
-        >
             <gmf
             IMT="PGA"
-            ruptureId="7679401525248"
+            ruptureId="4917737553920"
             >
-                <node gmv="3.3172143E-01" lat="0.0000000E+00" lon="0.0000000E+00"/>
+                <node gmv="2.4441898E-01" lat="0.0000000E+00" lon="0.0000000E+00"/>
+            </gmf>
+            <gmf
+            IMT="PGA"
+            ruptureId="5119601016832"
+            >
+                <node gmv="2.4993688E-01" lat="0.0000000E+00" lon="0.0000000E+00"/>
+            </gmf>
+            <gmf
+            IMT="PGA"
+            ruptureId="5222680231936"
+            >
+                <node gmv="2.5280240E-01" lat="0.0000000E+00" lon="0.0000000E+00"/>
+            </gmf>
+            <gmf
+            IMT="PGA"
+            ruptureId="5330054414336"
+            >
+                <node gmv="2.5582224E-01" lat="0.0000000E+00" lon="0.0000000E+00"/>
+            </gmf>
+            <gmf
+            IMT="PGA"
+            ruptureId="5338644348928"
+            >
+                <node gmv="2.5606537E-01" lat="0.0000000E+00" lon="0.0000000E+00"/>
+            </gmf>
+            <gmf
+            IMT="PGA"
+            ruptureId="5446018531328"
+            >
+                <node gmv="2.5912419E-01" lat="0.0000000E+00" lon="0.0000000E+00"/>
+            </gmf>
+            <gmf
+            IMT="PGA"
+            ruptureId="5639292059648"
+            >
+                <node gmv="2.6472244E-01" lat="0.0000000E+00" lon="0.0000000E+00"/>
+            </gmf>
+            <gmf
+            IMT="PGA"
+            ruptureId="5686536699904"
+            >
+                <node gmv="2.6610920E-01" lat="0.0000000E+00" lon="0.0000000E+00"/>
+            </gmf>
+            <gmf
+            IMT="PGA"
+            ruptureId="7258494730240"
+            >
+                <node gmv="3.1663474E-01" lat="0.0000000E+00" lon="0.0000000E+00"/>
+            </gmf>
+            <gmf
+            IMT="PGA"
+            ruptureId="8542689951744"
+            >
+                <node gmv="3.6495030E-01" lat="0.0000000E+00" lon="0.0000000E+00"/>
+            </gmf>
+            <gmf
+            IMT="PGA"
+            ruptureId="9156870275072"
+            >
+                <node gmv="3.9059716E-01" lat="0.0000000E+00" lon="0.0000000E+00"/>
+            </gmf>
+            <gmf
+            IMT="PGA"
+            ruptureId="9418863280128"
+            >
+                <node gmv="4.0207830E-01" lat="0.0000000E+00" lon="0.0000000E+00"/>
+            </gmf>
+            <gmf
+            IMT="PGA"
+            ruptureId="11802570129408"
+            >
+                <node gmv="5.2331454E-01" lat="0.0000000E+00" lon="0.0000000E+00"/>
             </gmf>
         </gmfSet>
     </gmfCollection>
