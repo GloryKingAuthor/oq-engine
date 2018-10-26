@@ -39,6 +39,8 @@ from openquake.hazardlib.calc.filters import split_sources
 from openquake.hazardlib.calc.gmf import CorrelationButNoInterIntraStdDevs
 from openquake.hazardlib import (
     geo, site, imt, valid, sourceconverter, nrml, InvalidFile)
+from openquake.hazardlib.source.rupture_collection import (
+    RuptureCollectionSource)
 from openquake.hazardlib.geo.mesh import point3d
 from openquake.hazardlib.probability_map import ProbabilityMap
 from openquake.risklib import asset, riskinput
@@ -807,17 +809,45 @@ def get_composite_source_model(oqparam, monitor=None, in_memory=True,
     # splitting assumes that the serials have been initialized already
     if split_all and oqparam.calculation_mode not in 'ucerf_hazard ucerf_risk':
         csm = parallel_split_filter(
-            csm, srcfilter, oqparam.random_seed, monitor('prefilter'))
+            csm, srcfilter, oqparam, monitor('prefilter'))
     return csm
 
 
-def split_filter(srcs, srcfilter, seed, sample_factor, monitor):
+def split_filter(srcs, srcfilter, seed, num_ses, sample_factor, monitor):
     """
     Split the given source and filter the subsources by distance and by
     magnitude. Perform sampling  if a nontrivial sample_factor is passed.
     Yields a pair (split_sources, split_time) if split_sources is non-empty.
     """
     splits, stime = split_sources(srcs)
+    if num_ses:
+        numpy.random.seed(seed)
+        new = []
+        for split in splits:
+            tom = getattr(split, 'temporal_occurrence_model')
+            if tom:
+                ruptures = list(split.iter_ruptures())
+                rates = numpy.array([rup.occurrence_rate for rup in ruptures])
+                n_occ = tom.sample_number_of_occurrences(rates * num_ses)
+                rups = []
+                idxs = []
+                for i, rup in enumerate(ruptures):
+                    if n_occ[i]:
+                        idxs.append(i)
+                        for _ in range(n_occ[i]):
+                            rups.append(rup)
+                if rups:
+                    rcs = RuptureCollectionSource(
+                        split.source_id, split.name,
+                        split.tectonic_region_type,
+                        split.mfd, rups)
+                    rcs.id = split.id
+                    rcs.src_group_id = split.src_group_id
+                    rcs.serial = split.serial
+                    new.append(rcs)
+            else:
+                new.append(split)
+        splits = new
     if splits and sample_factor:
         # debugging tip to reduce the size of a calculation
         # OQ_SAMPLE_SOURCES=.01 oq engine --run job.ini
@@ -830,7 +860,7 @@ def split_filter(srcs, srcfilter, seed, sample_factor, monitor):
         yield splits, stime
 
 
-def parallel_split_filter(csm, srcfilter, seed, monitor):
+def parallel_split_filter(csm, srcfilter, oqparam, monitor):
     """
     Apply :func:`split_filter` in parallel to the composite source model.
 
@@ -841,9 +871,14 @@ def parallel_split_filter(csm, srcfilter, seed, monitor):
     logging.info('Splitting/filtering sources')
     sources = csm.get_sources()
     dist = 'no' if os.environ.get('OQ_DISTRIBUTE') == 'no' else 'processpool'
+    if 'event_based' in oqparam.calculation_mode:
+        num_ses = oqparam.ses_per_logic_tree_path * (
+            oqparam.number_of_logic_tree_samples or 1)
+    else:
+        num_ses = 0
     smap = parallel.Starmap.apply(
         split_filter,
-        (sources, srcfilter, seed, sample_factor, mon),
+        (sources, srcfilter, oqparam.random_seed, num_ses, sample_factor, mon),
         maxweight=RUPTURES_PER_BLOCK, distribute=dist,
         progress=logging.debug, weight=operator.attrgetter('num_ruptures'))
     if monitor.hdf5:
