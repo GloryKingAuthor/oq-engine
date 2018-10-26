@@ -661,6 +661,7 @@ def get_source_models(oqparam, gsim_lt, source_model_lt, monitor,
                 for sg in newsm:
                     for src in sg:
                         src.src_group_id = grp_id
+                        src.samples = sm.samples
                         src.id = idx
                         idx += 1
                     sg.id = grp_id
@@ -820,7 +821,8 @@ def split_filter(srcs, srcfilter, seed, num_ses, sample_factor, monitor):
     Yields a pair (split_sources, split_time) if split_sources is non-empty.
     """
     if num_ses:  # in event based
-        srcs = rupture_collection.sample(srcs, num_ses, monitor)
+        with monitor('fast sampling'):
+            rupture_collection.sample(srcs, num_ses)
     splits, stime = split_sources(srcs)
     if splits and sample_factor:
         # debugging tip to reduce the size of a calculation

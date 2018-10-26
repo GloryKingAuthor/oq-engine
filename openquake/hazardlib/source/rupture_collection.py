@@ -69,7 +69,7 @@ def split(src, chunksize=MINWEIGHT):
             source_id, src.name, src.tectonic_region_type, amfd, block)
 
 
-def sample(srcs, num_ses, monitor):
+def sample(srcs, num_ses):
     """
     :param srcs: a list of sources (before splitting)
     :returns: a list of sampled RuptureCollectionSources, possibly empty
@@ -79,8 +79,7 @@ def sample(srcs, num_ses, monitor):
         numpy.random.seed(src.serial)
         tom = getattr(src, 'temporal_occurrence_model')
         if tom:
-            with monitor:
-                ruptures = list(src.iter_ruptures())
+            ruptures = list(src.iter_ruptures())
             rates = numpy.array([rup.occurrence_rate for rup in ruptures])
             n_occ = tom.sample_number_of_occurrences(
                 rates * num_ses * src.samples)
@@ -95,6 +94,7 @@ def sample(srcs, num_ses, monitor):
                     src.tectonic_region_type,
                     src.mfd, rups)
                 rcs.id = src.id
+                rcs.serial = src.serial
                 rcs.src_group_id = src.src_group_id
                 new.append(rcs)
         else:

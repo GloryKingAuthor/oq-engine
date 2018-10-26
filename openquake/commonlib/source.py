@@ -568,7 +568,7 @@ class CompositeSourceModel(collections.Sequence):
         This should be called only in event based calculators
         """
         serial = ses_seed
-        for src in self.getsources():
+        for src in self.get_sources():
             nr = src.num_ruptures
             src.serial = serial
             serial += nr
