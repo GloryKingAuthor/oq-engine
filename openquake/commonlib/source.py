@@ -562,7 +562,7 @@ class CompositeSourceModel(collections.Sequence):
         return {grp.id: sum(src.num_ruptures for src in grp)
                 for grp in self.src_groups}
 
-    def init_serials(self, ses_seed, num_ses):
+    def init_serials(self, ses_seed):
         """
         Generate unique seeds for each rupture with numpy.arange.
         This should be called only in event based calculators

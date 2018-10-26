@@ -69,13 +69,14 @@ def split(src, chunksize=MINWEIGHT):
             source_id, src.name, src.tectonic_region_type, amfd, block)
 
 
-def sample(srcs, ses_seed, num_ses, monitor):
+def sample(srcs, num_ses, monitor):
     """
+    :param srcs: a list of sources (before splitting)
     :returns: a list of sampled RuptureCollectionSources, possibly empty
     """
-    numpy.random.seed(ses_seed)
     new = []
     for src in srcs:
+        numpy.random.seed(src.serial)
         tom = getattr(src, 'temporal_occurrence_model')
         if tom:
             with monitor:

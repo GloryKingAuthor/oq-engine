@@ -39,8 +39,7 @@ from openquake.hazardlib.calc.filters import split_sources
 from openquake.hazardlib.calc.gmf import CorrelationButNoInterIntraStdDevs
 from openquake.hazardlib import (
     geo, site, imt, valid, sourceconverter, nrml, InvalidFile)
-from openquake.hazardlib.source.rupture_collection import (
-    RuptureCollectionSource)
+from openquake.hazardlib.source import rupture_collection
 from openquake.hazardlib.geo.mesh import point3d
 from openquake.hazardlib.probability_map import ProbabilityMap
 from openquake.risklib import asset, riskinput
@@ -793,7 +792,7 @@ def get_composite_source_model(oqparam, monitor=None, in_memory=True,
         return csm
 
     if 'event_based' in oqparam.calculation_mode:
-        # initialize the rupture serial numbers before splitting/filtering; in
+        # initialize the source serial numbers before splitting/filtering; in
         # this way the serials are independent from the site collection
         csm.init_serials(oqparam.ses_seed)
 
@@ -820,35 +819,9 @@ def split_filter(srcs, srcfilter, seed, num_ses, sample_factor, monitor):
     magnitude. Perform sampling  if a nontrivial sample_factor is passed.
     Yields a pair (split_sources, split_time) if split_sources is non-empty.
     """
+    if num_ses:  # in event based
+        srcs = rupture_collection.sample(srcs, num_ses, monitor)
     splits, stime = split_sources(srcs)
-    if num_ses:
-        numpy.random.seed(seed)
-        new = []
-        for split in splits:
-            tom = getattr(split, 'temporal_occurrence_model')
-            if tom:
-                ruptures = list(split.iter_ruptures())
-                rates = numpy.array([rup.occurrence_rate for rup in ruptures])
-                n_occ = tom.sample_number_of_occurrences(rates * num_ses)
-                rups = []
-                idxs = []
-                for i, rup in enumerate(ruptures):
-                    if n_occ[i]:
-                        idxs.append(i)
-                        for _ in range(n_occ[i]):
-                            rups.append(rup)
-                if rups:
-                    rcs = RuptureCollectionSource(
-                        split.source_id, split.name,
-                        split.tectonic_region_type,
-                        split.mfd, rups)
-                    rcs.id = split.id
-                    rcs.src_group_id = split.src_group_id
-                    rcs.serial = split.serial
-                    new.append(rcs)
-            else:
-                new.append(split)
-        splits = new
     if splits and sample_factor:
         # debugging tip to reduce the size of a calculation
         # OQ_SAMPLE_SOURCES=.01 oq engine --run job.ini
