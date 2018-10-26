@@ -1,4 +1,5 @@
   [Michele Simionato]
+  * Optimized the splitting of complex fault sources
   * Fixed the ShakeMap download procedure for `uncertainty.zip` archives
     with an incorrect structure (for instance for ci3031111)
   * Disabled the spatial correlation in risk-from-ShakeMap by default
@@ -62,10 +63,11 @@
     mean and standard deviation of the portfolio loss for each loss type
 
   [Marco Pagani]
-  * Added a first [preliminary] version of the GMM for the Canada model
+  * Added a first and preliminary version of the GMM for the Canada model
     represented in an analytical form.
   * Added a modified version of Atkinson and Macias to be used for the
     calculation of hazard in NSHMP2014.
+  * Added support for PGA to the Si and Midorikawa (1999).
 
   [Michele Simionato]
   * Made it possible to run the risk over an hazard calculation of another user
