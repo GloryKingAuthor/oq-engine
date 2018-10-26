@@ -17,6 +17,7 @@
 #  along with OpenQuake.  If not, see <http://www.gnu.org/licenses/>.
 
 import operator
+import numpy
 from openquake.baselib.general import block_splitter
 from openquake.hazardlib.geo.utils import get_bounding_box
 from openquake.hazardlib.source.base import ParametricSeismicSource
@@ -66,3 +67,35 @@ def split(src, chunksize=MINWEIGHT):
         amfd = mfd.ArbitraryMFD([rup.mag], [rup.mag_occ_rate])
         yield RuptureCollectionSource(
             source_id, src.name, src.tectonic_region_type, amfd, block)
+
+
+def sample(srcs, ses_seed, num_ses, monitor):
+    """
+    :returns: a list of sampled RuptureCollectionSources, possibly empty
+    """
+    numpy.random.seed(ses_seed)
+    new = []
+    for src in srcs:
+        tom = getattr(src, 'temporal_occurrence_model')
+        if tom:
+            with monitor:
+                ruptures = list(src.iter_ruptures())
+            rates = numpy.array([rup.occurrence_rate for rup in ruptures])
+            n_occ = tom.sample_number_of_occurrences(
+                rates * num_ses * src.samples)
+            rups = []
+            for i, rup in enumerate(ruptures):
+                if n_occ[i]:
+                    rup.n_occ = n_occ[i]
+                    rups.append(rup)
+            if rups:
+                rcs = RuptureCollectionSource(
+                    src.source_id, src.name,
+                    src.tectonic_region_type,
+                    src.mfd, rups)
+                rcs.id = src.id
+                rcs.src_group_id = src.src_group_id
+                new.append(rcs)
+        else:
+            new.append(src)
+    return new

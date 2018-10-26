@@ -28,6 +28,7 @@ from openquake.baselib.python3compat import decode
 from openquake.baselib.general import (
     groupby, group_array, gettemp, AccumDict, cached_property)
 from openquake.hazardlib import source, sourceconverter
+from openquake.hazardlib.source import rupture_collection
 from openquake.hazardlib.gsim.gmpe_table import GMPETable
 from openquake.commonlib import logictree
 from openquake.commonlib.rlzs_assoc import get_rlzs_assoc
@@ -561,19 +562,23 @@ class CompositeSourceModel(collections.Sequence):
         return {grp.id: sum(src.num_ruptures for src in grp)
                 for grp in self.src_groups}
 
-    def init_serials(self, ses_seed):
+    def init_serials(self, ses_seed, num_ses):
         """
         Generate unique seeds for each rupture with numpy.arange.
         This should be called only in event based calculators
         """
-        sources = self.get_sources()
-        n = sum(src.num_ruptures for src in sources)
+        n = 0
+        for sm in self.source_models:
+            sm.sources = rupture_collection.sample(
+                sm, ses_seed, num_ses, monitor)
+            n += sum(src.num_ruptures for src in sm.sources)
         rup_serial = numpy.arange(ses_seed, ses_seed + n, dtype=numpy.uint32)
         start = 0
-        for src in sources:
-            nr = src.num_ruptures
-            src.serial = rup_serial[start:start + nr]
-            start += nr
+        for sm in self.source_models:
+            for src in sm:
+                nr = src.num_ruptures
+                src.serial = rup_serial[start:start + nr]
+                start += nr
 
     def get_maxweight(self, weight, concurrent_tasks, minweight=MINWEIGHT):
         """
