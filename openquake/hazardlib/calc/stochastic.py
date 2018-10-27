@@ -114,12 +114,12 @@ def sample_ruptures(sources, src_filter=source_site_noop_filter,
     cmaker = ContextMaker(gsims, src_filter.integration_distance,
                           param, monitor)
     num_ses = param['ses_per_logic_tree_path']
-    for src, sites in src_filter(sources):
+    for src in sources:
         t0 = time.time()
         # NB: the number of occurrences is very low, << 1, so it is
         # more efficient to filter only the ruptures that occur, i.e.
         # to call sample_ruptures *before* the filtering
-        ebrs = build_eb_ruptures(src, num_ses, cmaker, sites)
+        ebrs = build_eb_ruptures(src, num_ses, cmaker, src_filter.sitecol)
         n_evs = sum(ebr.multiplicity for ebr in ebrs)
         eb_ruptures.extend(ebrs)
         dt = time.time() - t0
