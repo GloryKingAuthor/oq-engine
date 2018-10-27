@@ -112,7 +112,8 @@ class BaseSeismicSource(metaclass=abc.ABCMeta):
         mutex_weight = getattr(self, 'mutex_weight', 1)
         with ir_monitor:
             ruptures = list(self.iter_ruptures())
-        for rup, serial in zip(ruptures, self.serial):
+        serial = numpy.arange(self.serial, self.serial + len(ruptures))
+        for rup, serial in zip(ruptures, serial):
             rup.serial = serial  # used as seed
             numpy.random.seed(serial)
             num_occ = rup.sample_number_of_occurrences(shape)

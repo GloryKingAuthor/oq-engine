@@ -251,7 +251,7 @@ class EventBasedTestCase(CalculatorTestCase):
 
         # check split_time
         split_time = self.calc.datastore['source_info']['split_time'].sum()
-        self.assertGreater(split_time, 0)
+        self.assertEqual(split_time, 0)
 
     @attr('qa', 'hazard', 'event_based')
     def test_case_9(self):
