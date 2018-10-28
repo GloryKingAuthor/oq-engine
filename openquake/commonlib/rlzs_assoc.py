@@ -123,8 +123,7 @@ class RlzsAssoc(object):
                 except ValueError:  # there is more than 1 TRT
                     gsim = gsim_by_trt[trt]
                 acc[gsim].append(rlz.ordinal)
-        return collections.OrderedDict(
-            (gsim, numpy.array(acc[gsim], dtype=U16)) for gsim in sorted(acc))
+        return {gsim: numpy.array(acc[gsim], dtype=U16) for gsim in acc}
 
     def by_grp(self):
         """
@@ -223,10 +222,13 @@ class RlzsAssoc(object):
         array = self.by_grp()  # TODO: remove this
         return sum(len(array[grp]) for grp in array)
 
+    def __bool__(self):
+        return bool(self.gsim_by_trt)
+
     def __repr__(self):
         pairs = []
         dic = self.by_grp()
-        for grp in sorted(dic):
+        for grp in dic:
             grp_id = int(grp[4:])
             gsims = self.csm_info.get_gsims(grp_id)
             for gsim_idx, rlzis in dic[grp]:

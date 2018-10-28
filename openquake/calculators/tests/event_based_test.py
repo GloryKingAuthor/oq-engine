@@ -221,7 +221,7 @@ class EventBasedTestCase(CalculatorTestCase):
 
     @attr('qa', 'hazard', 'event_based')
     def test_case_7(self):
-        # 2 models x 3 GMPEs, 10 samples * 40 SES
+        # 2 models x 3 GMPEs, 10 samples * 60 SES
         expected = [
             'hazard_curve-mean.csv',
             'quantile_curve-0.1.csv',
