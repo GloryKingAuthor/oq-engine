@@ -543,13 +543,16 @@ class EBRupture(object):
     object, containing an array of site indices affected by the rupture,
     as well as the IDs of the corresponding seismic events.
     """
-    def __init__(self, rupture, srcidx, sids, events):
+    def __init__(self, rupture, srcidx, sids, grp_id, rlzslice, occurs):
         self.rupture = rupture
         self.srcidx = srcidx
         self.sids = sids
-        self.events = events
+        self.grp_id = grp_id
+        self.rlz_start = rlzslice.start
+        self.rlz_stop = rlzslice.stop
+        self.occurs = numpy.array(occurs, numpy.uint32)
         self.eidx1 = 0
-        self.eidx2 = len(events)
+        self.eidx2 = len(occurs)
 
     @property
     def serial(self):
@@ -559,32 +562,37 @@ class EBRupture(object):
         return self.rupture.serial
 
     @property
-    def grp_id(self):
-        """
-        Group ID of the rupture
-        """
-        return int(self.events[0]['grp_id'])  # need Python int, not uint16
-
-    @property
     def weight(self):
         """
         Weight of the EBRupture
         """
-        return len(self.sids) * len(self.events)
+        return len(self.sids) * len(self.occurs)
 
     @property
     def eids(self):
         """
         An array with the underlying event IDs
         """
-        return self.events['eid']
+        eids = []
+        for i, occur in enumerate(self.occurs):
+            rlzi = self.rlz_start + (occur // TWO16)
+            eids.append(self.rupture.serial * TWO32 + rlzi * TWO16 + i)
+        return numpy.array(eids, numpy.uint64)
+
+    def get_eids(self, sample):
+        eids = []
+        for i, occur in enumerate(self.occurs):
+            if occur // TWO16 == sample:
+                rlzi = self.rlz_start + sample
+                eids.append(self.rupture.serial * TWO32 + rlzi * TWO16 + i)
+        return numpy.array(eids, numpy.uint64)
 
     @property
     def multiplicity(self):
         """
         How many times the underlying rupture occurs.
         """
-        return len(self.events)
+        return len(self.occurs)
 
     def export(self, mesh):
         """
@@ -592,7 +600,11 @@ class EBRupture(object):
         attributes set, suitable for export in XML format.
         """
         rupture = self.rupture
-        events_by_ses = general.group_array(self.events, 'ses')
+        events_by_ses = general.AccumDict(accum=[])
+        for occur in self.occurs:
+            sam, ses = divmod(occur, TWO16)
+            eid = self.serial * TWO32 + (sam + self.rlz_start) * TWO16 + ses
+            events_by_ses[ses].append(eid)
         new = ExportedRupture(self.serial, events_by_ses, self.sids)
         new.mesh = mesh[self.sids]
         new.multiplicity = self.multiplicity
@@ -633,5 +645,5 @@ class EBRupture(object):
         return new
 
     def __repr__(self):
-        return '<%s %d%s>' % (
-            self.__class__.__name__, self.serial, self.events['eid'])
+        return '<%s %d[%d]>' % (
+            self.__class__.__name__, self.serial, len(self.occurs))

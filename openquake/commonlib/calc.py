@@ -360,6 +360,9 @@ class RuptureSerializer(object):
         ('pmfx', I32), ('mag', F32), ('rake', F32), ('occurrence_rate', F32),
         ('hypo', (F32, 3)), ('sy', U16), ('sz', U16)])
 
+    occur_dt = numpy.dtype([
+        ('rlz_start', U16), ('rlz_stop', U16), ('occurrences', hdf5.vuint32)])
+
     pmfs_dt = numpy.dtype([('serial', U32), ('pmf', hdf5.vfloat32)])
 
     @classmethod
@@ -369,6 +372,7 @@ class RuptureSerializer(object):
         """
         lst = []
         geoms = []
+        occurs = []
         nbytes = 0
         for ebrupture in ebruptures:
             rup = ebrupture.rupture
@@ -388,15 +392,22 @@ class RuptureSerializer(object):
             offset += n
             lst.append(tup)
             geoms.append(numpy.array([tuple(p) for p in points], point3d))
-            nbytes += cls.rupture_dt.itemsize + mesh.nbytes
+            occurs.append((ebrupture.rlz_start, ebrupture.rlz_stop,
+                           ebrupture.occurs))
+            nbytes += cls.rupture_dt.itemsize
+            nbytes += cls.occur_dt.itemsize + 4 * len(ebrupture.occurs)
+            nbytes += mesh.nbytes
         geom = numpy.concatenate(geoms)
-        return numpy.array(lst, cls.rupture_dt), geom, nbytes
+        return (numpy.array(lst, cls.rupture_dt),
+                numpy.array(occurs, cls.occur_dt),
+                geom, nbytes)
 
     def __init__(self, datastore):
         self.datastore = datastore
         self.nbytes = 0
         self.nruptures = 0
         datastore.create_dset('ruptures', self.rupture_dt, attrs={'nbytes': 0})
+        datastore.create_dset('rupoccur', self.occur_dt)
         datastore.create_dset('rupgeoms', point3d)
 
     def save(self, ebruptures, eidx=0):
@@ -422,10 +433,11 @@ class RuptureSerializer(object):
 
         # store the ruptures in a compact format
         offset = len(self.datastore['rupgeoms'])
-        array, geom, nbytes = self.get_array_nbytes(ebruptures, offset)
+        array, occur, geom, nbytes = self.get_array_nbytes(ebruptures, offset)
         previous = self.datastore.get_attr('ruptures', 'nbytes', 0)
         dset = self.datastore.extend(
             'ruptures', array, nbytes=previous + nbytes)
+        self.datastore.extend('rupoccur', occur)
         self.datastore.extend('rupgeoms', geom)
         # save nbytes occupied by the PMFs
         if pmfbytes:

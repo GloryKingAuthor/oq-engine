@@ -43,6 +43,7 @@ U32 = numpy.uint32
 U64 = numpy.uint64
 F32 = numpy.float32
 F64 = numpy.float64
+TWO16 = 2 ** 16
 TWO32 = 2 ** 32
 RUPTURES_PER_BLOCK = 1000  # decided by MS
 BLOCKSIZE = 30000  # decided by MS
@@ -77,9 +78,9 @@ def get_events(ebruptures):
     events = []
     year = 0  # to be set later
     for ebr in ebruptures:
-        for event in ebr.events:
-            rec = (event['eid'], ebr.serial, ebr.grp_id, year, event['ses'],
-                   event['sample'])
+        for eid, occur in zip(ebr.eids, ebr.occurs):
+            sam, ses = divmod(occur, TWO16)
+            rec = (eid, ebr.serial, ebr.grp_id, year, ses, sam)
             events.append(rec)
     return numpy.array(events, readinput.stored_event_dt)
 
@@ -100,16 +101,11 @@ def max_gmf_size(ruptures_by_grp, rlzs_by_gsim,
     n = 0
     for grp_id, ebruptures in ruptures_by_grp.items():
         sample = 0
-        samples = samples_by_grp[grp_id]
         for gsim, rlzs in rlzs_by_gsim[grp_id].items():
             for ebr in ebruptures:
-                if samples > 1:
-                    len_eids = [len(get_array(ebr.events, sample=s)['eid'])
-                                for s in range(sample, sample + len(rlzs))]
-                else:  # full enumeration
-                    len_eids = [len(ebr.events['eid'])] * len(rlzs)
                 for r, rlzi in enumerate(rlzs):
-                    n += len(ebr.rupture.sctx.sids) * len_eids[r]
+                    n += len(ebr.rupture.sctx.sids) * len(
+                        ebr.get_eids(r + sample))
             sample += len(rlzs)
     return n * nbytes
 

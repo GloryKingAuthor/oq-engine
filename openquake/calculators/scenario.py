@@ -25,6 +25,8 @@ from openquake.commonlib import readinput, source, calc
 from openquake.hazardlib.source.rupture import EBRupture
 from openquake.calculators import base
 
+TWO16 = 2 ** 16
+
 
 @base.calculators.add('scenario')
 class ScenarioCalculator(base.HazardCalculator):
@@ -53,10 +55,25 @@ class ScenarioCalculator(base.HazardCalculator):
         self.datastore['oqparam'] = oq
         self.rlzs_assoc = cinfo.get_rlzs_assoc()
         E = oq.number_of_ground_motion_fields
-        events = numpy.zeros(E, readinput.stored_event_dt)
-        events['eid'] = numpy.arange(E)
-        ebr = EBRupture(self.rup, 0, self.sitecol.sids, events)
-        self.datastore['events'] = ebr.events
+        assert E < TWO16, E
+        S = oq.ses_per_logic_tree_path
+        assert S < TWO16, E
+        G = len(self.gsims)
+        assert G < TWO16, E
+        events = numpy.zeros(E * S * G, readinput.stored_event_dt)
+        occurs = []
+        e = 0
+        for rlzi in range(len(self.gsims)):
+            for sam in range(E):
+                for ses in range(S):
+                    occurs.append(rlzi * TWO16 + e)
+                    events[e]['sample'] = sam
+                    events[e]['ses'] = ses
+                    e += 1
+        ebr = EBRupture(self.rup, 0, self.sitecol.sids,
+                        0, slice(0, len(self.gsims)), occurs)
+        events['eid'] = ebr.eids
+        self.datastore['events'] = events
         rupser = calc.RuptureSerializer(self.datastore)
         rupser.save([ebr])
         rupser.close()
@@ -86,4 +103,5 @@ class ScenarioCalculator(base.HazardCalculator):
             with self.monitor('saving gmfs', autoflush=True):
                 base.save_gmf_data(
                     self.datastore, self.sitecol,
-                    numpy.array(list(self.gmfa.values())), self.oqparam.imtls)
+                    numpy.array(list(self.gmfa.values())),
+                    self.oqparam.imtls, self.rup.serial)

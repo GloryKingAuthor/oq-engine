@@ -154,6 +154,7 @@ def build_eb_ruptures(src, rlz_slice, num_ses, cmaker, s_sites, rup_n_occ=()):
     # NB: s_sites can be None if cmaker.maximum_distance is False, then
     # the contexts are not computed and the ruptures not filtered
     ebrs = []
+    grp_id = src.src_group_id
     samples = getattr(src, 'samples', 1)
     nr = rlz_slice.stop - rlz_slice.start
     if rup_n_occ == ():
@@ -172,32 +173,21 @@ def build_eb_ruptures(src, rlz_slice, num_ses, cmaker, s_sites, rup_n_occ=()):
         if not hasattr(src, 'samples'):  # full enumeration
             n_occ = fix_shape(n_occ, nr)
 
-        # creating events
+        # building occurrences
         with cmaker.evs_mon:
             occ = n_occ.sum(axis=1)  # occurrences by sam_idx
             E = occ.sum()
             if E == 0:
                 continue
             assert E < TWO16, E
-            events = numpy.zeros(E, event_dt)
-            events['grp_id'] = src.src_group_id
+            occurs = []
             i = 0
             for sam_idx in range(nr):  # numpy.ndenumerate would be slower
                 for ses_idx, num_occ in enumerate(n_occ[sam_idx]):
                     for _ in range(num_occ):
-                        events[i]['sample'] = sam_idx
-                        events[i]['ses'] = ses_idx + 1
+                        occurs.append(sam_idx * TWO16 + ses_idx + 1)
                         i += 1
 
-        # setting event IDs based on the rupture serial and the sample
-        ebr = EBRupture(rup, src.id, indices, events)
-        start = 0
-        for sam_idx, n in enumerate(occ):
-            rlzi = rlz_slice.start + sam_idx
-            eids = U64(TWO32 * ebr.serial + TWO16 * rlzi) + numpy.arange(
-                n, dtype=U64)
-            ebr.events[start:start + len(eids)]['eid'] = eids
-            start += len(eids)
-        ebrs.append(ebr)
+        ebrs.append(EBRupture(rup, src.id, indices, grp_id, rlz_slice, occurs))
 
     return ebrs

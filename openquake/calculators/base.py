@@ -50,6 +50,7 @@ U32 = numpy.uint32
 U64 = numpy.uint64
 F32 = numpy.float32
 TWO16 = 2 ** 16
+TWO32 = 2 ** 32
 
 
 class InvalidCalculationID(Exception):
@@ -847,7 +848,7 @@ class RiskCalculator(HazardCalculator):
         return acc + res
 
 
-def get_gmv_data(sids, gmfs):
+def get_gmv_data(sids, gmfs, serial):
     """
     Convert an array of shape (R, N, E, I) into an array of type gmv_data_dt
     """
@@ -856,8 +857,8 @@ def get_gmv_data(sids, gmfs):
         [('rlzi', U16), ('sid', U32), ('eid', U64), ('gmv', (F32, (I,)))])
     # NB: ordering of the loops: first site, then event, then realization
     # it is such that save_gmf_data saves the indices correctly for each sid
-    it = ((r, sids[s], eid, gmfa[s, eid])
-          for s, eid in itertools.product(
+    it = ((r, sids[s], serial * TWO32 + r * TWO16 + e, gmfa[s, e])
+          for s, e in itertools.product(
                   numpy.arange(N, dtype=U32), numpy.arange(E, dtype=U64))
           for r, gmfa in enumerate(gmfs))
     return numpy.fromiter(it, gmv_data_dt)
@@ -913,16 +914,16 @@ def save_gmfs(calculator):
                       oq.imtls, eids)
 
 
-def save_gmf_data(dstore, sitecol, gmfs, imts, eids=()):
+def save_gmf_data(dstore, sitecol, gmfs, imts, serial=0):
     """
     :param dstore: a :class:`openquake.baselib.datastore.DataStore` instance
     :param sitecol: a :class:`openquake.hazardlib.site.SiteCollection` instance
     :param gmfs: an array of shape (R, N, E, M)
     :param imts: a list of IMT strings
-    :param eids: E event IDs or the empty tuple
+    :param serial: serial number of the rupture (only for scenario)
     """
     offset = 0
-    dstore['gmf_data/data'] = gmfa = get_gmv_data(sitecol.sids, gmfs)
+    dstore['gmf_data/data'] = gmfa = get_gmv_data(sitecol.sids, gmfs, serial)
     dic = general.group_array(gmfa, 'sid')
     lst = []
     all_sids = sitecol.complete.sids
@@ -934,10 +935,6 @@ def save_gmf_data(dstore, sitecol, gmfs, imts, eids=()):
     dstore['gmf_data/imts'] = ' '.join(imts)
     dstore['gmf_data/indices'] = numpy.array(lst, U32)
     dstore.set_attrs('gmf_data', num_gmfs=len(gmfs))
-    if len(eids):  # store the events
-        events = numpy.zeros(len(eids), readinput.stored_event_dt)
-        events['eid'] = eids
-        dstore['events'] = events
 
 
 def import_gmfs(dstore, fname, sids):

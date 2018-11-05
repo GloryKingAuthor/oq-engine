@@ -327,7 +327,7 @@ class GmfGetter(object):
                 # a distance of 99.9996936 km over a maximum distance of 100 km
                 continue
             self.computers.append(computer)
-            eids.append(ebr.events['eid'])
+            eids.append(ebr.eids)
         self.eids = numpy.concatenate(eids) if eids else []
         # dictionary rlzi -> array(imtls, events, nbytes)
         self.gmdata = AccumDict(accum=numpy.zeros(self.I + 1, F32))
@@ -347,7 +347,7 @@ class GmfGetter(object):
             for computer in self.computers:
                 rup = computer.rupture
                 sids = computer.sids
-                all_eids = [get_array(rup.events, sample=sample + r)['eid']
+                all_eids = [rup.get_eids(sample + r)
                             for r, rlzi in enumerate(rlzs)]
                 num_events = sum(len(eids) for eids in all_eids)
                 if num_events == 0:
@@ -527,14 +527,13 @@ class RuptureGetter(object):
             if key.startswith('code_'):
                 code2cls[int(key[5:])] = [classes[v] for v in val.split()]
         grp_trt = self.dstore['csm_info'].grp_by("trt")
-        events = self.dstore['events']
+        occurs = self.dstore['rupoccur'][self.mask]
         ruptures = self.dstore['ruptures'][self.mask]
         # NB: ruptures.sort(order='serial') causes sometimes a SystemError:
         # <ufunc 'greater'> returned a result with an error set
         # this is way I am sorting with Python and not with numpy below
         rupgeoms = self.dstore['rupgeoms']
-        for rec in sorted(ruptures, key=operator.itemgetter('serial')):
-            evs = events[rec['eidx1']:rec['eidx2']]
+        for occ, rec in zip(occurs, ruptures):
             if self.grp_id is not None and self.grp_id != rec['grp_id']:
                 continue
             mesh = numpy.zeros((3, rec['sy'], rec['sz']), F32)
@@ -570,7 +569,9 @@ class RuptureGetter(object):
                 # fault surface, strike and dip will be computed
                 rupture.surface.strike = rupture.surface.dip = None
                 rupture.surface.__init__(RectangularMesh(*mesh))
-            ebr = EBRupture(rupture, rec['srcidx'], (), evs)
+            ebr = EBRupture(rupture, rec['srcidx'], (), rec['grp_id'],
+                            slice(occ['rlz_start'], occ['rlz_stop']),
+                            occ['occurrences'])
             ebr.eidx1 = rec['eidx1']
             ebr.eidx2 = rec['eidx2']
             # not implemented: rupture_slip_direction

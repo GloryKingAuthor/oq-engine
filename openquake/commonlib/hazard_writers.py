@@ -324,7 +324,7 @@ def rupture_to_element(rup, parent=None):
     rup_elem = et.SubElement(parent, rup.typology)
     elem = et.SubElement(rup_elem, 'stochasticEventSets')
     for ses in rup.events_by_ses:
-        eids = rup.events_by_ses[ses]['eid']
+        eids = rup.events_by_ses[ses]
         ses_elem = et.SubElement(elem, 'SES', id=ses)
         ses_elem.text = ' '.join(str(eid) for eid in eids)
     rup_elem.set('id', rup.rupid)
