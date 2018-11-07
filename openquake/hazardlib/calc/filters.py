@@ -200,9 +200,9 @@ def split_sources(srcs):
         if mag_b < min_mag:  # discard the source completely
             continue
         has_serial = hasattr(src, 'serial')
-        if has_serial:
-            src.serial = numpy.arange(
-                src.serial, src.serial + src.num_ruptures)
+        #if has_serial:
+        #    src.serial = numpy.arange(
+        #        src.serial, src.serial + src.num_ruptures)
         if not splittable(src):
             sources.append(src)
             split_time[src.id] = time.time() - t0
