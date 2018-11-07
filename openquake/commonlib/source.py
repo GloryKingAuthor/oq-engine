@@ -573,7 +573,7 @@ class CompositeSourceModel(collections.Sequence):
         serial = ses_seed
         for src in sources:
             nr = src.num_ruptures
-            src.serial = numpy.arange(serial, serial + nr)
+            src.serial = serial
             serial += nr
 
     def get_maxweight(self, weight, concurrent_tasks, minweight=MINWEIGHT):

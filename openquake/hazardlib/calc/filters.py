@@ -199,10 +199,6 @@ def split_sources(srcs):
         min_mag = getattr(src, 'min_mag', 0)
         if mag_b < min_mag:  # discard the source completely
             continue
-        has_serial = hasattr(src, 'serial')
-        #if has_serial:
-        #    src.serial = numpy.arange(
-        #        src.serial, src.serial + src.num_ruptures)
         if not splittable(src):
             sources.append(src)
             split_time[src.id] = time.time() - t0
@@ -223,21 +219,14 @@ def split_sources(srcs):
         sources.extend(splits)
         has_samples = hasattr(src, 'samples')
         if len(splits) > 1:
-            start = 0
             for i, split in enumerate(splits):
                 split.source_id = '%s:%s' % (src.source_id, i)
                 split.src_group_id = src.src_group_id
                 split.id = src.id
-                if has_serial:
-                    nr = split.num_ruptures
-                    split.serial = src.serial[start:start + nr]
-                    start += nr
                 if has_samples:
                     split.samples = src.samples
         elif splits:  # single source
             splits[0].id = src.id
-            if has_serial:
-                splits[0].serial = src.serial
             if has_samples:
                 splits[0].samples = src.samples
     return sources, split_time
